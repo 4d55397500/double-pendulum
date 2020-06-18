@@ -280,8 +280,8 @@ function pendulum({
             return [x1, y1, x2, y2];
         },
         step: function(dt) {
-            [a1, a2, p1, p2] = rk4(a1, a2, p1, p2, dt);
-            tail.push(a1, a2);
+            [a1, a2, p1, p2] = rk4(a1, a2, p1, p2, dt); // next positions and velocities
+            tail.push(a1, a2); // push to history for line drawing
         },
         draw2d: function(ctx) {
             draw2d(ctx, tail, a1, a2, massColor, tailColor);
