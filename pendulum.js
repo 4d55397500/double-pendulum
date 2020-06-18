@@ -1,8 +1,8 @@
 "use strict";
-const G = 1.2; // gravitational acceleration
+const G = 9.8; // gravitational acceleration
 const M = 1.0; // mass
 const L = 1.0; // length
-const dtMax = 30.0; // ms
+const dtMax = 5.0; // ms
 const tailMax = 400; // tail length
 
 const barWidth = 0.04;
@@ -73,7 +73,7 @@ void main() {
 }`,
 };
 
-function deriviative(a1, a2, p1, p2) {
+function derivative(a1, a2, p1, p2) {
     let ml2 = M * L * L;
     let cos12 = Math.cos(a1 - a2);
     let sin12 = Math.sin(a1 - a2);
@@ -86,28 +86,28 @@ function deriviative(a1, a2, p1, p2) {
 
 // Update pendulum by timestep
 function rk4(k1a1, k1a2, k1p1, k1p2, dt) {
-    let [k1da1, k1da2, k1dp1, k1dp2] = deriviative(k1a1, k1a2, k1p1, k1p2);
+    let [k1da1, k1da2, k1dp1, k1dp2] = derivative(k1a1, k1a2, k1p1, k1p2);
 
     let k2a1 = k1a1 + k1da1 * dt / 2;
     let k2a2 = k1a2 + k1da2 * dt / 2;
     let k2p1 = k1p1 + k1dp1 * dt / 2;
     let k2p2 = k1p2 + k1dp2 * dt / 2;
 
-    let [k2da1, k2da2, k2dp1, k2dp2] = deriviative(k2a1, k2a2, k2p1, k2p2);
+    let [k2da1, k2da2, k2dp1, k2dp2] = derivative(k2a1, k2a2, k2p1, k2p2);
 
     let k3a1 = k1a1 + k2da1 * dt / 2;
     let k3a2 = k1a2 + k2da2 * dt / 2;
     let k3p1 = k1p1 + k2dp1 * dt / 2;
     let k3p2 = k1p2 + k2dp2 * dt / 2;
 
-    let [k3da1, k3da2, k3dp1, k3dp2] = deriviative(k3a1, k3a2, k3p1, k3p2);
+    let [k3da1, k3da2, k3dp1, k3dp2] = derivative(k3a1, k3a2, k3p1, k3p2);
 
     let k4a1 = k1a1 + k3da1 * dt;
     let k4a2 = k1a2 + k3da2 * dt;
     let k4p1 = k1p1 + k3dp1 * dt;
     let k4p2 = k1p2 + k3dp2 * dt;
 
-    let [k4da1, k4da2, k4dp1, k4dp2] = deriviative(k4a1, k4a2, k4p1, k4p2);
+    let [k4da1, k4da2, k4dp1, k4dp2] = derivative(k4a1, k4a2, k4p1, k4p2);
 
     return [
         k1a1 + (k1da1 + 2*k2da1 + 2*k3da1 + k4da1) * dt / 6,
@@ -123,7 +123,7 @@ function history(n) {
         length: 0,
         v: new Float32Array(n * 2),
         push: function(a1, a2) {
-            h.v[h.i * 2 + 0] = Math.sin(a1) + Math.sin(a2);
+            h.v[h.i * 2] = Math.sin(a1) + Math.sin(a2);
             h.v[h.i * 2 + 1] = Math.cos(a1) + Math.cos(a2);
             h.i = (h.i + 1) % n;
             if (h.length < n)
@@ -132,7 +132,7 @@ function history(n) {
         visit: function(f) {
             for (let j = h.i + n - 2; j > h.i + n - h.length - 1; j--) {
                 let a = (j + 1) % n;
-                let b = (j + 0) % n;
+                let b = (j) % n;
                 f(h.v[a * 2], h.v[a * 2 + 1], h.v[b * 2], h.v[b * 2 + 1]);
             }
         }
@@ -140,19 +140,23 @@ function history(n) {
     return h;
 }
 
+// returns v normalized to ||v|| = 1
 function normalize(v0, v1) {
     let d = Math.sqrt(v0 * v0 + v1 * v1);
     return [v0 / d, v1 / d];
 }
 
+//vector difference a - b
 function sub(a0, a1, b0, b1) {
     return [a0 - b0, a1 - b1];
 }
 
+// vector sum a + b
 function add(a0, a1, b0, b1) {
     return [a0 + b0, a1 + b1];
 }
 
+// dot product a * b
 function dot(ax, ay, bx, by) {
     return ax * bx + ay * by;
 }
@@ -184,7 +188,7 @@ function polyline(hist, poly) {
             let [lx, ly] = sub(x1, y1, x0, y0);
             let [nx, ny] = normalize(-ly, lx);
             let len = Math.min(w, w / dot(mx, my, nx, ny));
-            poly[i * 4 + 0] = x1 + mx * len;
+            poly[i * 4] = x1 + mx * len;
             poly[i * 4 + 1] = y1 + my * len;
             poly[i * 4 + 2] = x1 - mx * len;
             poly[i * 4 + 3] = y1 - my * len;
@@ -197,7 +201,7 @@ function polyline(hist, poly) {
     let [lx, ly] = sub(xf, yf, x0, y0);
     let [nx, ny] = normalize(-ly, lx);
     i++;
-    poly[i * 4 + 0] = xf + w * nx;
+    poly[i * 4] = xf + w * nx;
     poly[i * 4 + 1] = yf + w * ny;
     poly[i * 4 + 2] = xf - w * nx;
     poly[i * 4 + 3] = yf - w * ny;
@@ -236,7 +240,7 @@ function compile(gl, vert, frag) {
         result[name] = gl.getUniformLocation(p, name);
     }
     return result;
-};
+}
 
 // Create a new, random double pendulum
 function pendulum({
@@ -365,7 +369,7 @@ function draw3d(gl, webgl, pendulums) {
         gl.uniform1f(bar.u_angle, a2 - Math.PI / 2);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
-};
+}
 
 function glRenderer(gl, tailLen) {
     let webgl = {};
@@ -483,12 +487,14 @@ function draw2d(ctx, tail, a1, a2, massColor, tailColor) {
     function toggleMode() {
         switch (mode) {
             case '2d':
+                console.log('switched to 3d');
                 mode = '3d';
                 canvas = c3d;
                 c3d.style.display = 'block';
                 c2d.style.display = 'none';
                 break;
             case '3d':
+                console.log('switched to 2d');
                 mode = '2d';
                 canvas = c2d;
                 c2d.style.display = 'block';
@@ -504,6 +510,7 @@ function draw2d(ctx, tail, a1, a2, massColor, tailColor) {
                 break;
             case 97: // a
                 let color = [Math.random(), Math.random(), Math.random()];
+                console.log('pressed a, creating new pendulum ...');
                 state.push(new pendulum({tailColor: color}));
                 break;
             case 99: // c
@@ -517,6 +524,7 @@ function draw2d(ctx, tail, a1, a2, massColor, tailColor) {
                     state.pop();
                 break;
             case 109: // m
+                console.log('m pressed, switching dimension mode ...');
                 toggleMode();
                 break;
         }
@@ -527,7 +535,7 @@ function draw2d(ctx, tail, a1, a2, massColor, tailColor) {
         let dt = Math.min(t - last, dtMax);
         let ww = window.innerWidth;
         let wh = window.innerHeight;
-        if (canvas.width != ww || canvas.height != wh) {
+        if (canvas.width !== ww || canvas.height !== wh) {
             /* Only resize when necessary */
             canvas.width = ww;
             canvas.height = wh;
