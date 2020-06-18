@@ -1,14 +1,15 @@
 "use strict";
-const G = 9.8; // gravitational acceleration
-const M = 1.0; // mass
-const L = 1.0; // length
+const G = 9.8; // physical gravitational constant
+const M = 1.0; // physical mass
+const L = 1.0; // physical length
 const dtMax = 5.0; // ms
-const tailMax = 400; // tail length
+const tailMax = 4000; // displayed trail line length
 
-const barWidth = 0.04;
-const barLength = 0.23;
-const massRadius = 0.035;
-const tailThickness = 0.012;
+// bar is physically massless
+const barWidth = 0.02; // displayed bar width
+const barLength = 0.23; // displayed bar length
+const massRadius = 0.035; // displayed mass radius
+const tailThickness = 0.012; // displayed trail line thickness
 
 // WebGL stuff
 const quad = new Float32Array([-1, -1, +1, -1, -1, +1, +1, +1]);
@@ -73,6 +74,8 @@ void main() {
 }`,
 };
 
+// likely variables: a1, a2 are angles of 1st and 2nd pendulums wrt verticals, respectively
+// p1, p2 are likely angular velocities of a1, a2 respectively
 function derivative(a1, a2, p1, p2) {
     let ml2 = M * L * L;
     let cos12 = Math.cos(a1 - a2);
@@ -117,14 +120,16 @@ function rk4(k1a1, k1a2, k1p1, k1p2, dt) {
     ];
 }
 
+// history of previous n positions as sequence of alternating a1, a2 values at
+// consecutive timesteps
 function history(n) {
     let h = {
         i: 0,
         length: 0,
         v: new Float32Array(n * 2),
         push: function(a1, a2) {
-            h.v[h.i * 2] = Math.sin(a1) + Math.sin(a2);
-            h.v[h.i * 2 + 1] = Math.cos(a1) + Math.cos(a2);
+            h.v[h.i * 2] = Math.sin(a1) + Math.sin(a2); // x value at timestep
+            h.v[h.i * 2 + 1] = Math.cos(a1) + Math.cos(a2); // y value at timestep
             h.i = (h.i + 1) % n;
             if (h.length < n)
                 h.length++;
@@ -267,10 +272,10 @@ function pendulum({
             return [a1, a2, p1, p2];
         },
         positions: function() {
-            let x1 = +Math.sin(a1);
-            let y1 = -Math.cos(a1);
-            let x2 = +Math.sin(a2) + x1;
-            let y2 = -Math.cos(a2) + y1;
+            let x1 = +Math.sin(a1); // x pos. of 1st mass
+            let y1 = -Math.cos(a1); // y pos. of 1st mass
+            let x2 = +Math.sin(a2) + x1; // x pos. of 2nd mass
+            let y2 = -Math.cos(a2) + y1; // y pos. of 2nd mass
             return [x1, y1, x2, y2];
         },
         step: function(dt) {
