@@ -248,6 +248,7 @@ function compile(gl, vert, frag) {
 }
 
 // Create a new, random double pendulum
+// all pendulum creation happens with this method
 function pendulum({
     tailColor = [0, 0, 1],
     massColor = [0, 0, 0],
@@ -258,10 +259,10 @@ function pendulum({
     if (init) {
         [a1, a2, p1, p2] = init;
     } else {
-        a1 = Math.random() * Math.PI / 2 + Math.PI * 3 / 4;
-        a2 = Math.random() * Math.PI / 2 + Math.PI * 3 / 4;
-        p1 = 0.0;
-        p2 = 0.0;
+        a1 = Math.random() * Math.PI / 2 + Math.PI * 3 / 4; // initial first angle
+        a2 = Math.random() * Math.PI / 2 + Math.PI * 3 / 4; // initial second angle
+        p1 = Math.random() * 10 - 5; // initial first angle velocity
+        p2 = Math.random() * 10 - 5; // initial second angle velocity
     }
 
     return {
